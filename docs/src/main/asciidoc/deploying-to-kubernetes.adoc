@@ -1186,9 +1186,9 @@ Quarkus supports the link:https://github.com/servicebinding/spec[Service Binding
 
 Specifically, Quarkus implements the link:https://github.com/servicebinding/spec#workload-projection[Workload Projection] part of the specification, therefore allowing applications to bind to services, such as a Database or a Broker, without the need for user configuration.
 
-To enable Service Binding for supported extensions, add the `quarkus-kubernetes-service-binding` extension to the application dependencies.
+To enable service binding for supported extensions, add the `quarkus-kubernetes-service-binding` extension to the application dependencies.
 
-* The following extensions can be used with Service Binding and are supported for Workload Projection:
+* The following extensions can be used with service binding and are supported for Workload Projection:
 +
 ====
 * `quarkus-jdbc-mariadb`
@@ -1199,20 +1199,29 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 
 * `quarkus-kafka-client`
 * `quarkus-smallrye-reactive-messaging-kafka`
+
+* `quarkus-reactive-db2-client`
+* `quarkus-reactive-mssql-client`
+* `quarkus-reactive-mysql-client`
+* `quarkus-reactive-oracle-client`
+* `quarkus-reactive-pgl-client`
 ====
 
 
 === Workload Projection
 
-Workload Projection is a process of obtaining the configuration for services from the Kubernetes cluster. This configuration takes the form of directory structures that follow certain conventions and is attached to an application or to a service as a mounted volume. The `kubernetes-service-binding` extension uses this directory structure to create configuration sources, which allows you to configure additional modules, such as databases or message brokers.
+Workload Projection is a process of obtaining the configuration for services from the Kubernetes cluster. This configuration takes the form of directory structures that follow certain conventions and is attached to an application or to a service as a mounted volume.
+The `kubernetes-service-binding` extension uses this directory structure to create configuration sources, which allows you to configure additional modules, such as databases or message brokers.
 
-During application development, users can use workload projection to connect their application to a development database, or other locally-run services, without changing the actual application code or configuration. 
+You can use workload projection during application development to connect their application to a development database or other locally-run services without changing the actual application code or configuration.
 
-For an example of a workload projection where the directory structure is included in the test resources and passed to integration test, see the link:https://github.com/quarkusio/quarkus/tree/e7efe6b3efba91b9c4ae26f9318f8397e23e7505/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[Kubernetes Service Binding datasource] GitHub repository.
+For an example of a workload projection where the directory structure is included in the test resources and passed to integration test, see the link:https://github.com/quarkusio/quarkus/tree/2.7.5.Final/integration-tests/kubernetes-service-binding-jdbc/src/test/resources/k8s-sb[Kubernetes Service Binding datasource] GitHub repository.
 
 [NOTE]
 ====
-* The `k8s-sb` directory is the root of all service bindings. In this example, only one database called `fruit-db` is intended to be bound. This binding database has the `type` file, that indicates `postgresql` as the database type, while the other files in the directory provide the necessary information to establish the connection. 
+* The `k8s-sb` directory is the root of all service bindings.
+In this example, only one database called `fruit-db` is intended to be bound.
+This binding database has the `type` file, that indicates `postgresql` as the database type, while the other files in the directory provide the necessary information to establish the connection.
 
 * After your Quarkus project obtains information from `SERVICE_BINDING_ROOT` environment variables that are set by OpenShift, you can locate generated configuration files that are present in the file system and use them to map the configuration-file values to properties of certain extensions.
 ====
@@ -1220,36 +1229,41 @@ For an example of a workload projection where the directory structure is include
 
 == Introduction to the Service Binding Operator
 
-The link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] is an Operator that implements link:https://github.com/servicebinding/spec[Service Binding Specification for Kubernetes] and is meant to simplify the binding of services to an application. Containerized applications that support link:https://github.com/servicebinding/spec#workload-projection[Workload Projection] obtain service binding information in the form of volume mounts. The Service Binding Operator reads binding service information and mounts it to the application containers that need it.
+The link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] is an Operator that implements link:https://https://github.com/servicebinding/spec[Service Binding Specification for Kubernetes] and is meant to simplify the binding of services to an application.
+Containerized applications that support link:https://https://github.com/servicebinding/spec#workload-projection[Workload Projection] obtain service binding information in the form of volume mounts.
+The Service Binding Operator reads binding service information and mounts it to the application containers that need it.
 
 The correlation between application and bound services is expressed through the `ServiceBinding` resources, which declares the intent of what services are meant to be bound to what application.
 
-The Service Binding Operator watches for `ServiceBinding` resources, which inform the Operator what applications are meant to be bound with what services. When a listed application is deployed, the Service Binding Operator collects all the binding information that must be passed to the application, then upgrades the application container by attaching a volume mount with the binding information.
+The Service Binding Operator watches for `ServiceBinding` resources, which inform the Operator what applications are meant to be bound with what services.
+When a listed application is deployed, the Service Binding Operator collects all the binding information that must be passed to the application, then upgrades the application container by attaching a volume mount with the binding information.
 
 The Service Binding Operator completes the following actions:
 
 * Observes `ServiceBinding` resources for workloads intended to be bound to a particular service
 * Applies the binding information to the workload using volume mounts
 
-The following chapter describes the automatic and semi-automatic service binding approaches and their use cases. With either approach, the `kubernetes-service-binding` extension generates a `ServiceBinding` resource. With the semi-automatic approach, users must provide a configuration for target services manually. With the automatic approach, for a limited set of services generating the `ServiceBinding` resource, no additional configuration is needed.
+The following chapter describes the automatic and semi-automatic service binding approaches and their use cases.
+With either approach, the `kubernetes-service-binding` extension generates a `ServiceBinding` resource. With the semi-automatic approach, users must provide a configuration for target services manually. With the automatic approach, for a limited set of services generating the `ServiceBinding` resource, no additional configuration is needed.
 
 
 === Semi-automatic service binding
 
-A service binding process starts with a user specification of required services that will be bound to a certain application. This expression is summarized in the `ServiceBinding` resource that is generated by the `kubernetes-service-binding` extension. The use of the `kubernetes-service-binding` extensions helps users to generate `ServiceBinding` resources with minimal configuration, therefore simplifying the process overall.
+A service binding process starts with a user specification of required services that will be bound to a certain application.
+This expression is summarized in the `ServiceBinding` resource that is generated by the `kubernetes-service-binding` extension.
+The use of the `kubernetes-service-binding` extensions helps users to generate `ServiceBinding` resources with minimal configuration, therefore simplifying the process overall.
 
 The Service Binding Operator responsible for the binding process then reads the information from the `ServiceBinding` resource and mounts the required files to a container accordingly.
-
 
 * An example of the `ServiceBinding` resource:
 +
 [source,yaml]
 ----
-apiVersion: binding.operators.coreos.com/v1beta1
+apiVersion: binding.operators.coreos.com/v1beta1    <1>
 kind: ServiceBinding
 metadata:
  name: binding-request
- namespace: service-binding-demo
+ namespace: service-binding-demo    <2>
 spec:
  application:
    name: java-app
@@ -1270,8 +1284,8 @@ spec:
 +
 [source,properties]
 ----
-quarkus.kubernetes-service-binding.services.db-demo.api-version=postgres-operator.crunchydata.com/v1beta1
-quarkus.kubernetes-service-binding.services.db-demo.kind=Database
+quarkus.kubernetes-service-binding.services.db-demo.api-version=postgres-operator.crunchydata.com/v1beta1   <1>
+quarkus.kubernetes-service-binding.services.db-demo.kind=Database   <2>
 ----
 ====
 
@@ -1300,19 +1314,20 @@ quarkus.kubernetes-service-binding.services.db-demo.name=my-db
 
 The `quarkus-kubernetes-service-binding` extension can generate the `ServiceBinding` resource automatically after detecting that an application requires access to the external services that are provided by available bindable Operators.
 
-NOTE: Automatic service binding can be generated for a limited number of service types. To be consistent with established terminology for Kubernetes and Quarkus services, this chapter refers to these service types as kinds.
+NOTE: Automatic service binding can be generated for a limited number of service types.
+To be consistent with established terminology for Kubernetes and Quarkus services, this chapter refers to these service types as kinds.
 
-.Operators that support the service auto-binding
-[%autowidth,%noheader,stripes=even]
+.Operators that support Automatic Service Binding
 |====
-|            | Operator                                                                                     | API Version                               | Kind                 
-| `postgresql` | link:https://operatorhub.io/operator/postgresql[CrunchyData Postgres]                        | postgres-operator.crunchydata.com/v1beta1 | PostgresCluster      
-| `mysql`      | link:https://operatorhub.io/operator/percona-xtradb-cluster-operator[Percona XtraDB Cluster] | pxc.percona.com/v1-9-0                    | PerconaXtraDBCluster 
-| `mongo`      | link:https://operatorhub.io/operator/percona-server-mongodb-operator[Percona Mongo]          | psmdb.percona.com/v1-9-0                  | PerconaServerMongoDB 
+|            | Operator                                                                                     | Api Version                               | Kind
+| `postgresql` | link:https://operatorhub.io/operator/postgresql[CrunchyData Postgres]                        | postgres-operator.crunchydata.com/v1beta1 | PostgresCluster
+| `mysql`      | link:https://operatorhub.io/operator/percona-xtradb-cluster-operator[Percona XtraDB Cluster] | pxc.percona.com/v1-9-0                    | PerconaXtraDBCluster
+| `mongo`      | link:https://operatorhub.io/operator/percona-server-mongodb-operator[Percona Mongo]          | psmdb.percona.com/v1-9-0                  | PerconaServerMongoDB
 |====
 
 
-=== Automatic datasource binding
+
+== Automatic datasource binding
 
 For traditional databases, automatic binding is initiated whenever a datasource is configured as follows:
 
@@ -1325,7 +1340,7 @@ The previous configuration, combined with the presence of `quarkus-datasource`, 
 
 By using the `apiVersion` and `kind` properties of the Operator resource, which matches the used `postgresql` Operator, the generated `ServiceBinding` resource binds the service or resource to the application.
 
-When you do not specify a name for your database service, the the value of the `db-kind` property is used as the default name.
+When you do not specify a name for your database service, the value of the `db-kind` property is used as the default name.
 
 [source,yaml]
 ----
@@ -1370,9 +1385,11 @@ The generated `service` contains the following:
 ----
 
 
-==== Customizing Automatic Service Binding
+=== Customizing automatic service binding
 
-Even though automatic binding was developed to eliminate as much manual configuration as possible, there are cases where modifying the generated `ServiceBinding` resource might still be needed. The generation process exclusively relies on information extracted from the application and the knowledge of the supported Operators, which may not reflect what is deployed in the cluster. The generated resource is based purely on the knowledge of the supported bindable Operators for popular service kinds and a set of conventions that were developed to prevent possible mismatches, such as:
+Even though automatic binding was developed to eliminate as much manual configuration as possible, there are cases where modifying the generated `ServiceBinding` resource might still be needed.
+The generation process exclusively relies on information extracted from the application and the knowledge of the supported Operators, which may not reflect what is deployed in the cluster.
+The generated resource is based purely on the knowledge of the supported bind-able operators for popular service kinds and a set of conventions that were developed to prevent possible mismatches, such as:
 
 * The target resource name does not match the datasource name
 * A specific Operator needs to be used rather than the default Operator for that service kind
@@ -1386,11 +1403,12 @@ Even though automatic binding was developed to eliminate as much manual configur
 * For named `mongo` clients, the name of the client is used.
 
 ====
-.Example 1 - Name mismatch
+.Example 1: Name mismatch
 
 For cases in which you need to modify the generated `ServiceBinding` to fix a name mismatch, use the `quarkus.kubernetes-service-binding.services` properties and specify the service's name as the service key.
 
-The `service key` is usually the name of the service, for example the name of the datasource, or the name of the `mongo` client. When this value is not available, the datasource type, such as `postgresql`, `mysql`, `mongo`, is used instead.
+The `service key` is usually the name of the service, for example, the name of the datasource, or the name of the `mongo` client.
+When this value is not available, the datasource type, such as `postgresql`, `mysql`, `mongo`, is used instead.
 
 To avoid naming conflicts between different types of services, prefix the `service key` with a specific datasource type, such as `postgresql-__<person>__`.
 
@@ -1415,7 +1433,7 @@ The following example shows that for a named datasource, the datasource name is 
 quarkus.datasource.fruits-db.db-kind=postgresql
 ----
 
-This has the same effect as the following configuration: 
+This has the same effect as the following configuration:
 
 [source,properties]
 ----
@@ -1426,4 +1444,4 @@ quarkus.kubernetes-service-binding.services.fruits-db.name=fruits-db
 ====
 
 .Additional resources
-* For more details about the available properties and how do they work, see the link:https://github.com/servicebinding/spec#workload-projection[Workload Projection] part of the Service Binding specification.
+* For additional information about the available properties, see the link:https://github.com/k8s-service-bindings/spec#workload-projection[Workload Projection] part of the Service Binding specification.
